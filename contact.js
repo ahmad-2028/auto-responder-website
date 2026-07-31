@@ -27,6 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.success) {
+                const summaryEl = document.getElementById('successSummary');
+                summaryEl.innerHTML =
+                    '<strong>Subject:</strong> ' + escapeHtml(formData.subject) +
+                    '<br><strong>Message:</strong> ' + escapeHtml(formData.message);
+                summaryEl.style.display = 'block';
+
                 contactForm.style.display = 'none';
                 successMessage.style.display = 'block';
                 errorMessage.style.display = 'none';
@@ -43,3 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}

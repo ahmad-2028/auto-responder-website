@@ -74,15 +74,25 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
 const EMAIL_CONFIG = {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
+    port: parseInt(process.env.SMTP_PORT, 10) || 587,
     secure: false,
     auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASS || 'your-app-password'
+        user: process.env.EMAIL_USER || '',
+        pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
     }
 };
 
-const YOUR_EMAIL = process.env.YOUR_EMAIL || 'your-email@gmail.com';
+const YOUR_EMAIL = process.env.YOUR_EMAIL || process.env.EMAIL_USER || '';
+
+// Email notification only runs when a REAL sender account is configured
+// (placeholder values from .env.example are treated as not configured).
+const emailConfigured = Boolean(
+    EMAIL_CONFIG.auth.user &&
+    EMAIL_CONFIG.auth.pass &&
+    YOUR_EMAIL &&
+    EMAIL_CONFIG.auth.user !== 'your-email@gmail.com' &&
+    EMAIL_CONFIG.auth.pass !== 'your-app-password'
+);
 
 // Storage backend: PostgreSQL (when DATABASE_URL is set) or JSON files.
 async function initStorage() {
@@ -197,30 +207,44 @@ app.post('/api/contact', async (req, res) => {
         emails.push(newEmail);
         await writeData('emails', emails);
 
-        try {
-            const transporter = nodemailer.createTransport(EMAIL_CONFIG);
+        let emailSent = false;
+        let emailError = null;
 
-            await transporter.sendMail({
-                from: EMAIL_CONFIG.auth.user,
-                to: YOUR_EMAIL,
-                subject: `[Auto Responder Support] ${subject}`,
-                html: `
-                    <h2>New Support Message</h2>
-                    <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
-                    <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
-                    <p><strong>Message:</strong></p>
-                    <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
-                    <hr>
-                    <p><small>Sent via Auto Responder website</small></p>
-                `
-            });
+        if (emailConfigured) {
+            try {
+                const transporter = nodemailer.createTransport(EMAIL_CONFIG);
 
-            console.log('Email sent successfully');
-        } catch (emailError) {
-            console.error('Error sending email:', emailError);
+                await transporter.sendMail({
+                    from: EMAIL_CONFIG.auth.user,
+                    to: YOUR_EMAIL,
+                    subject: `[Auto Responder Support] ${subject}`,
+                    html: `
+                        <h2>New Support Message</h2>
+                        <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
+                        <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+                        <p><strong>Message:</strong></p>
+                        <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
+                        <hr>
+                        <p><small>Sent via Auto Responder website</small></p>
+                    `
+                });
+
+                emailSent = true;
+                console.log('Email sent successfully');
+            } catch (error) {
+                emailError = error.message;
+                console.error('Error sending email:', error);
+            }
+        } else {
+            console.warn('SMTP not configured — skipping email notification. Set EMAIL_USER, EMAIL_PASS and YOUR_EMAIL.');
         }
 
-        res.json({ success: true, message: 'Message sent successfully' });
+        res.json({
+            success: true,
+            message: 'Message sent successfully',
+            emailSent,
+            emailError
+        });
     } catch (error) {
         console.error('Error processing contact form:', error);
         res.status(500).json({ success: false, message: 'Failed to send message' });

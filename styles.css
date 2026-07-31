@@ -773,3 +773,97 @@ body {
         margin-top: 0;
     }
 }
+
+/* ---------- Full Message View Modal ---------- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+}
+
+.modal-card {
+    background: #ffffff;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    word-break: break-word;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: color 0.2s ease;
+}
+
+.modal-close:hover {
+    color: var(--text-dark);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-meta {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    word-break: break-word;
+}
+
+.modal-message {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-light);
+    border-radius: 0.5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+}
+
+.msg-preview {
+    max-width: 220px;
+}
+
+.success-summary {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    text-align: left;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-dark);
+    white-space: pre-wrap;
+    word-break: break-word;
+}

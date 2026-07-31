@@ -28,6 +28,26 @@ document.addEventListener('DOMContentLoaded', () => {
         loadStats();
     });
 
+    // Full message modal
+    const messageModal = document.getElementById('messageModal');
+    const modalClose = document.getElementById('modalClose');
+    const emailsTableBody = document.getElementById('emailsTableBody');
+
+    modalClose.addEventListener('click', closeMessageModal);
+    messageModal.addEventListener('click', (e) => {
+        if (e.target === messageModal) closeMessageModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMessageModal();
+    });
+
+    emailsTableBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.view-msg-btn');
+        if (!btn) return;
+        const email = emailsById[btn.dataset.id];
+        if (email) openMessageModal(email);
+    });
+
     loadStats();
 });
 
@@ -70,13 +90,18 @@ async function loadStats() {
     }
 }
 
+let emailsById = {};
+
 function populateEmailsTable(emails) {
     const tbody = document.getElementById('emailsTableBody');
+    emailsById = {};
 
     if (emails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="no-data">No messages yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="no-data">No messages yet</td></tr>';
         return;
     }
+
+    emails.forEach(email => { emailsById[email.id] = email; });
 
     tbody.innerHTML = emails.map(email => {
         const date = new Date(email.timestamp);
@@ -88,10 +113,25 @@ function populateEmailsTable(emails) {
                 <td>${escapeHtml(email.name)}</td>
                 <td>${escapeHtml(email.email)}</td>
                 <td>${escapeHtml(email.subject)}</td>
-                <td>${escapeHtml(email.message.substring(0, 100))}${email.message.length > 100 ? '...' : ''}</td>
+                <td class="msg-preview">${escapeHtml(email.message.substring(0, 80))}${email.message.length > 80 ? '...' : ''}</td>
+                <td><button class="btn btn-secondary btn-small view-msg-btn" data-id="${escapeHtml(email.id)}">View</button></td>
             </tr>
         `;
     }).join('');
+}
+
+function openMessageModal(email) {
+    document.getElementById('modalSubject').textContent = email.subject || '(no subject)';
+    document.getElementById('modalName').textContent = email.name;
+    document.getElementById('modalEmail').textContent = email.email;
+    const date = new Date(email.timestamp);
+    document.getElementById('modalDate').textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    document.getElementById('modalMessage').textContent = email.message;
+    messageModal.style.display = 'flex';
+}
+
+function closeMessageModal() {
+    messageModal.style.display = 'none';
 }
 
 function populateDownloadsTable(downloads) {
