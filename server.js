@@ -113,8 +113,14 @@ async function initStorage() {
 
     try {
         await fs.mkdir(DATA_DIR, { recursive: true });
-        await fs.writeFile(dataFile('downloads'), JSON.stringify([]));
-        await fs.writeFile(dataFile('emails'), JSON.stringify([]));
+        // Only create files if missing — never wipe existing data on restart.
+        for (const key of ['downloads', 'emails']) {
+            try {
+                await fs.access(dataFile(key));
+            } catch {
+                await fs.writeFile(dataFile(key), JSON.stringify([]));
+            }
+        }
         console.log('File storage ready (data/ folder)');
     } catch (error) {
         console.error('Error initializing data files:', error);
@@ -201,7 +207,8 @@ app.post('/api/contact', async (req, res) => {
             name,
             email,
             subject,
-            message
+            message,
+            status: 'pending'
         };
 
         emails.push(newEmail);
@@ -303,6 +310,46 @@ app.get('/api/admin/stats', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching stats:', error);
         res.status(500).json({ success: false, message: 'Failed to fetch statistics' });
+    }
+});
+
+// Update a support message status (pending / working / solved)
+app.patch('/api/admin/email/:id', requireAuth, async (req, res) => {
+    try {
+        const { status } = req.body;
+        if (!['pending', 'working', 'solved'].includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+
+        const emails = await readData('emails');
+        const email = emails.find(e => e.id === req.params.id);
+        if (!email) {
+            return res.status(404).json({ success: false, message: 'Message not found' });
+        }
+
+        email.status = status;
+        await writeData('emails', emails);
+        res.json({ success: true, message: 'Status updated' });
+    } catch (error) {
+        console.error('Error updating status:', error);
+        res.status(500).json({ success: false, message: 'Failed to update status' });
+    }
+});
+
+// Delete a support message
+app.delete('/api/admin/email/:id', requireAuth, async (req, res) => {
+    try {
+        const emails = await readData('emails');
+        const filtered = emails.filter(e => e.id !== req.params.id);
+        if (filtered.length === emails.length) {
+            return res.status(404).json({ success: false, message: 'Message not found' });
+        }
+
+        await writeData('emails', filtered);
+        res.json({ success: true, message: 'Message deleted' });
+    } catch (error) {
+        console.error('Error deleting message:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete message' });
     }
 });
 

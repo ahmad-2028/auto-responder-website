@@ -41,11 +41,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') closeMessageModal();
     });
 
-    emailsTableBody.addEventListener('click', (e) => {
-        const btn = e.target.closest('.view-msg-btn');
-        if (!btn) return;
-        const email = emailsById[btn.dataset.id];
-        if (email) openMessageModal(email);
+    emailsTableBody.addEventListener('click', async (e) => {
+        const viewBtn = e.target.closest('.view-msg-btn');
+        if (viewBtn) {
+            const email = emailsById[viewBtn.dataset.id];
+            if (email) openMessageModal(email);
+            return;
+        }
+
+        const deleteBtn = e.target.closest('.delete-msg-btn');
+        if (deleteBtn) {
+            const id = deleteBtn.dataset.id;
+            if (!confirm('Delete this message permanently?')) return;
+            await deleteMessage(id);
+        }
+    });
+
+    emailsTableBody.addEventListener('change', async (e) => {
+        const select = e.target.closest('.status-select');
+        if (!select) return;
+        updateStatusSelectClass(select, select.value);
+        await updateStatus(select.dataset.id, select.value, select);
     });
 
     loadStats();
@@ -97,7 +113,7 @@ function populateEmailsTable(emails) {
     emailsById = {};
 
     if (emails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="no-data">No messages yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="no-data">No messages yet</td></tr>';
         return;
     }
 
@@ -106,6 +122,7 @@ function populateEmailsTable(emails) {
     tbody.innerHTML = emails.map(email => {
         const date = new Date(email.timestamp);
         const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        const status = email.status || 'pending';
 
         return `
             <tr>
@@ -114,10 +131,79 @@ function populateEmailsTable(emails) {
                 <td>${escapeHtml(email.email)}</td>
                 <td>${escapeHtml(email.subject)}</td>
                 <td class="msg-preview">${escapeHtml(email.message.substring(0, 80))}${email.message.length > 80 ? '...' : ''}</td>
-                <td><button class="btn btn-secondary btn-small view-msg-btn" data-id="${escapeHtml(email.id)}">View</button></td>
+                <td>
+                    <select class="status-select status-${status}" data-id="${escapeHtml(email.id)}" title="Change status">
+                        <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="working" ${status === 'working' ? 'selected' : ''}>Working</option>
+                        <option value="solved" ${status === 'solved' ? 'selected' : ''}>Solved</option>
+                    </select>
+                </td>
+                <td class="action-cell">
+                    <button class="btn btn-secondary btn-small view-msg-btn" data-id="${escapeHtml(email.id)}">View</button>
+                    <button class="btn btn-danger btn-small delete-msg-btn" data-id="${escapeHtml(email.id)}">Delete</button>
+                </td>
             </tr>
         `;
     }).join('');
+}
+
+async function updateStatus(id, status, select) {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/email/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + adminToken
+            },
+            body: JSON.stringify({ status })
+        });
+
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+            updateStatusSelectClass(select, emailsById[id] ? (emailsById[id].status || 'pending') : 'pending');
+            alert(result.message || 'Failed to update status');
+        }
+    } catch (error) {
+        console.error('Error updating status:', error);
+        updateStatusSelectClass(select, emailsById[id] ? (emailsById[id].status || 'pending') : 'pending');
+        alert('Failed to update status');
+    }
+}
+
+async function deleteMessage(id) {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/email/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + adminToken }
+        });
+
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            loadStats();
+        } else {
+            alert(result.message || 'Failed to delete message');
+        }
+    } catch (error) {
+        console.error('Error deleting message:', error);
+        alert('Failed to delete message');
+    }
+}
+
+function updateStatusSelectClass(select, status) {
+    select.classList.remove('status-pending', 'status-working', 'status-solved');
+    select.classList.add('status-' + status);
 }
 
 function openMessageModal(email) {
@@ -126,6 +212,7 @@ function openMessageModal(email) {
     document.getElementById('modalEmail').textContent = email.email;
     const date = new Date(email.timestamp);
     document.getElementById('modalDate').textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    document.getElementById('modalStatus').textContent = (email.status || 'pending');
     document.getElementById('modalMessage').textContent = email.message;
     messageModal.style.display = 'flex';
 }
