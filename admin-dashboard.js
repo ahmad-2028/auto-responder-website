@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     adminToken = localStorage.getItem('adminToken');
 
     if (!adminToken) {
-        window.location.href = 'admin-login.html';
+        window.location.href = '/admin-login';
         return;
     }
 
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (e) { /* ignore network errors */ }
         localStorage.removeItem('adminToken');
-        window.location.href = 'admin-login.html';
+        window.location.href = '/admin-login';
     });
 
     refreshBtn.addEventListener('click', () => {
@@ -75,7 +75,7 @@ async function loadStats() {
 
         if (response.status === 401) {
             localStorage.removeItem('adminToken');
-            window.location.href = 'admin-login.html';
+            window.location.href = '/admin-login';
             return;
         }
 
@@ -160,7 +160,7 @@ async function updateStatus(id, status, select) {
 
         if (response.status === 401) {
             localStorage.removeItem('adminToken');
-            window.location.href = 'admin-login.html';
+            window.location.href = '/admin-login';
             return;
         }
 
@@ -185,7 +185,7 @@ async function deleteMessage(id) {
 
         if (response.status === 401) {
             localStorage.removeItem('adminToken');
-            window.location.href = 'admin-login.html';
+            window.location.href = '/admin-login';
             return;
         }
 

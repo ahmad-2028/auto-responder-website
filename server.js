@@ -376,6 +376,11 @@ app.get('/api/admin/email-config', requireAuth, (req, res) => {
     });
 });
 
+// Clean URLs (hide the .html extension). The old .html URLs still work.
+app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'contact.html')));
+app.get('/admin-login', (req, res) => res.sendFile(path.join(__dirname, 'admin-login.html')));
+app.get('/admin-dashboard', (req, res) => res.sendFile(path.join(__dirname, 'admin-dashboard.html')));
+
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
