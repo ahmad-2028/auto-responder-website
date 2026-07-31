@@ -102,10 +102,14 @@ const dataFile = (key) => path.join(DATA_DIR, key + '.json');
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
+const SMTP_PORT = parseInt(process.env.SMTP_PORT, 10) || 587;
 const EMAIL_CONFIG = {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT, 10) || 587,
-    secure: false,
+    port: SMTP_PORT,
+    // Port 465 uses implicit TLS; 587 uses STARTTLS. Allow an explicit override.
+    secure: process.env.SMTP_SECURE
+        ? process.env.SMTP_SECURE === 'true'
+        : SMTP_PORT === 465,
     auth: {
         user: process.env.EMAIL_USER || '',
         pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
