@@ -27,23 +27,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.success) {
+                contactForm.reset(); // clear the fields for the next message
+
                 const summaryEl = document.getElementById('successSummary');
-                summaryEl.innerHTML =
-                    '<strong>Subject:</strong> ' + escapeHtml(formData.subject) +
-                    '<br><strong>Message:</strong> ' + escapeHtml(formData.message);
-                summaryEl.style.display = 'block';
+                if (summaryEl) {
+                    summaryEl.innerHTML =
+                        '<strong>Subject:</strong> ' + escapeHtml(formData.subject) +
+                        '<br><strong>Message:</strong> ' + escapeHtml(formData.message);
+                    summaryEl.style.display = 'block';
+                }
 
                 contactForm.style.display = 'none';
                 successMessage.style.display = 'block';
                 errorMessage.style.display = 'none';
             } else {
-                contactForm.style.display = 'none';
                 successMessage.style.display = 'none';
                 errorMessage.style.display = 'block';
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            contactForm.style.display = 'none';
             successMessage.style.display = 'none';
             errorMessage.style.display = 'block';
         }
