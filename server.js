@@ -65,6 +65,32 @@ function escapeHtml(text) {
         .replace(/'/g, '&#39;');
 }
 
+async function sendEmailNotification({ name, email, subject, message }) {
+    // Bounded timeouts so a slow/broken SMTP server can never hang the request.
+    const transporter = nodemailer.createTransport({
+        ...EMAIL_CONFIG,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000
+    });
+
+    await transporter.sendMail({
+        from: EMAIL_CONFIG.auth.user,
+        to: YOUR_EMAIL,
+        subject: `[Auto Responder Support] ${subject}`,
+        html: `
+            <h2>New Support Message</h2>
+            <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
+            <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+            <p><strong>Message:</strong></p>
+            <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
+            <hr>
+            <p><small>Sent via Auto Responder website</small></p>
+        `
+    });
+    console.log('Email sent successfully');
+}
+
 const DATA_DIR = path.join(__dirname, 'data');
 const dataFile = (key) => path.join(DATA_DIR, key + '.json');
 
@@ -215,44 +241,16 @@ app.post('/api/contact', async (req, res) => {
         emails.push(newEmail);
         await writeData('emails', emails);
 
-        let emailSent = false;
-        let emailError = null;
+        // Respond immediately so the form always clears — never wait on SMTP.
+        res.json({ success: true, message: 'Message sent successfully' });
 
+        // Email notification fires in the background and never blocks the response.
         if (emailConfigured) {
-            try {
-                const transporter = nodemailer.createTransport(EMAIL_CONFIG);
-
-                await transporter.sendMail({
-                    from: EMAIL_CONFIG.auth.user,
-                    to: YOUR_EMAIL,
-                    subject: `[Auto Responder Support] ${subject}`,
-                    html: `
-                        <h2>New Support Message</h2>
-                        <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
-                        <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
-                        <p><strong>Message:</strong></p>
-                        <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
-                        <hr>
-                        <p><small>Sent via Auto Responder website</small></p>
-                    `
-                });
-
-                emailSent = true;
-                console.log('Email sent successfully');
-            } catch (error) {
-                emailError = error.message;
-                console.error('Error sending email:', error);
-            }
+            sendEmailNotification({ name, email, subject, message })
+                .catch(err => console.error('Error sending email:', err));
         } else {
             console.warn('SMTP not configured — skipping email notification. Set EMAIL_USER, EMAIL_PASS and YOUR_EMAIL.');
         }
-
-        res.json({
-            success: true,
-            message: 'Message sent successfully',
-            emailSent,
-            emailError
-        });
     } catch (error) {
         console.error('Error processing contact form:', error);
         res.status(500).json({ success: false, message: 'Failed to send message' });
