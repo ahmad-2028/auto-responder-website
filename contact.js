@@ -37,9 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     summaryEl.style.display = 'block';
                 }
 
-                contactForm.style.display = 'none';
+                // Keep the (now empty) form visible so you can write another message
+                contactForm.style.display = '';
                 successMessage.style.display = 'block';
                 errorMessage.style.display = 'none';
+
+                // Auto-hide the success note after a few seconds
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 6000);
             } else {
                 successMessage.style.display = 'none';
                 errorMessage.style.display = 'block';

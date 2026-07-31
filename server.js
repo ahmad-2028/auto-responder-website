@@ -26,7 +26,8 @@ app.use(express.json());
 // Never serve the runtime data folder (downloads/emails JSON) over HTTP
 app.use('/data', (req, res) => res.status(404).end());
 
-app.use(express.static(__dirname));
+// maxAge: 0 keeps the browser from serving stale JS/CSS/HTML after a deploy
+app.use(express.static(__dirname, { maxAge: 0 }));
 
 // In-memory admin session tokens (reset when the server restarts)
 const adminTokens = new Set();
