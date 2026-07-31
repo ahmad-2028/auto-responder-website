@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Auto Responder</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="animations.css">
+</head>
+<body>
+    <nav class="navbar navbar-admin">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">Auto Responder Admin</div>
+                <div class="nav-links">
+                    <button id="logoutBtn" class="btn btn-secondary btn-small">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="dashboard-section">
+        <div class="container">
+            <div class="dashboard-header reveal">
+                <h1>Dashboard</h1>
+                <p>Overview of your app statistics</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card reveal reveal-delay-1">
+                    <div class="stat-icon download-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Total Downloads</h3>
+                        <div class="stat-number count-up" id="totalDownloads" data-target="0">0</div>
+                        <div class="stat-label">Download button clicks</div>
+                    </div>
+                </div>
+
+                <div class="stat-card reveal reveal-delay-2">
+                    <div class="stat-icon email-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Total Emails</h3>
+                        <div class="stat-number count-up" id="totalEmails" data-target="0">0</div>
+                        <div class="stat-label">Support messages received</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-tables">
+                <div class="table-card reveal reveal-delay-1">
+                    <div class="table-header">
+                        <h2>Recent Support Messages</h2>
+                        <button id="refreshBtn" class="btn btn-secondary btn-small">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Subject</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emailsTableBody">
+                                <tr>
+                                    <td colspan="5" class="no-data">No messages yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="table-card reveal reveal-delay-2">
+                    <div class="table-header">
+                        <h2>Download History</h2>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>User Agent</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="downloadsTableBody">
+                                <tr>
+                                    <td colspan="3" class="no-data">No downloads yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="admin-dashboard.js"></script>
+    <script src="animations.js"></script>
+</body>
+</html>
