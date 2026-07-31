@@ -12,10 +12,13 @@ const PORT = process.env.PORT || 3000;
 
 // PostgreSQL connection pool. Only used when DATABASE_URL is set
 // (e.g. on Render). Without it, the app falls back to JSON files in data/.
-const pool = process.env.DATABASE_URL
+// Strip any ?sslmode=... query param — SSL is handled by the `ssl` option
+// below, and pg warns that sslmode 'require' is treated as 'verify-full'.
+const dbUrl = process.env.DATABASE_URL;
+const pool = dbUrl
     ? new Pool({
-          connectionString: process.env.DATABASE_URL,
-          ssl: /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL)
+          connectionString: dbUrl.split('?')[0],
+          ssl: /localhost|127\.0\.0\.1/.test(dbUrl)
               ? false
               : { rejectUnauthorized: false }
       })
