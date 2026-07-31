@@ -462,6 +462,16 @@ body {
     margin-bottom: 1rem;
 }
 
+a.logo-large {
+    text-decoration: none;
+    display: inline-block;
+}
+
+a.logo:hover,
+a.logo-large:hover {
+    opacity: 0.85;
+}
+
 .login-header h2 {
     font-size: 1.5rem;
     color: var(--text-dark);
