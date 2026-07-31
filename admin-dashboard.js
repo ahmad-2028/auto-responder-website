@@ -1,7 +1,9 @@
 const API_URL = '';
 
+let adminToken = '';
+
 document.addEventListener('DOMContentLoaded', () => {
-    const adminToken = localStorage.getItem('adminToken');
+    adminToken = localStorage.getItem('adminToken');
 
     if (!adminToken) {
         window.location.href = 'admin-login.html';
@@ -11,7 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logoutBtn');
     const refreshBtn = document.getElementById('refreshBtn');
 
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            await fetch(`${API_URL}/api/admin/logout`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + adminToken }
+            });
+        } catch (e) { /* ignore network errors */ }
         localStorage.removeItem('adminToken');
         window.location.href = 'admin-login.html';
     });
@@ -25,7 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadStats() {
     try {
-        const response = await fetch(`${API_URL}/api/admin/stats`);
+        const response = await fetch(`${API_URL}/api/admin/stats`, {
+            headers: { 'Authorization': 'Bearer ' + adminToken }
+        });
+
+        if (response.status === 401) {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+
         const result = await response.json();
 
         if (result.success) {

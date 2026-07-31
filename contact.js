@@ -1,4 +1,4 @@
-const API_URL = 'https://your-backend-url.onrender.com';
+const API_URL = '';
 
 document.addEventListener('DOMContentLoaded', () => {
     const contactForm = document.getElementById('contactForm');

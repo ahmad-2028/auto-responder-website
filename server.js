@@ -1,17 +1,56 @@
 require('dotenv').config();
 
 const express = require('express');
-const cors = require('cors');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
 app.use(express.json());
+
+// Never serve the runtime data folder (downloads/emails JSON) over HTTP
+app.use('/data', (req, res) => res.status(404).end());
+
 app.use(express.static(__dirname));
+
+// In-memory admin session tokens (reset when the server restarts)
+const adminTokens = new Set();
+
+function requireAuth(req, res, next) {
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+    if (token && adminTokens.has(token)) {
+        next();
+    } else {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+}
+
+// Simple brute-force guard for the login endpoint (10 tries per 15 min)
+const loginAttempts = new Map();
+function isLoginBlocked(ip) {
+    const now = Date.now();
+    const rec = loginAttempts.get(ip) || { count: 0, resetAt: now + 15 * 60 * 1000 };
+    if (now > rec.resetAt) {
+        rec.count = 0;
+        rec.resetAt = now + 15 * 60 * 1000;
+    }
+    rec.count++;
+    loginAttempts.set(ip, rec);
+    return rec.count > 10;
+}
+
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DOWNLOADS_FILE = path.join(DATA_DIR, 'downloads.json');
@@ -125,10 +164,10 @@ app.post('/api/contact', async (req, res) => {
                 subject: `[Auto Responder Support] ${subject}`,
                 html: `
                     <h2>New Support Message</h2>
-                    <p><strong>From:</strong> ${name} (${email})</p>
-                    <p><strong>Subject:</strong> ${subject}</p>
+                    <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
+                    <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
                     <p><strong>Message:</strong></p>
-                    <p>${message.replace(/\n/g, '<br>')}</p>
+                    <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
                     <hr>
                     <p><small>Sent via Auto Responder website</small></p>
                 `
@@ -149,11 +188,22 @@ app.post('/api/contact', async (req, res) => {
 app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body;
 
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    if (isLoginBlocked(ip)) {
+        return res.status(429).json({
+            success: false,
+            message: 'Too many login attempts. Try again in 15 minutes.'
+        });
+    }
+
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        const token = crypto.randomBytes(32).toString('hex');
+        adminTokens.add(token);
+        loginAttempts.delete(ip);
         res.json({
             success: true,
             message: 'Login successful',
-            token: 'admin-token-' + Date.now()
+            token
         });
     } else {
         res.status(401).json({
@@ -163,7 +213,14 @@ app.post('/api/admin/login', (req, res) => {
     }
 });
 
-app.get('/api/admin/stats', async (req, res) => {
+app.post('/api/admin/logout', (req, res) => {
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+    if (token) adminTokens.delete(token);
+    res.json({ success: true });
+});
+
+app.get('/api/admin/stats', requireAuth, async (req, res) => {
     try {
         const downloads = await readData(DOWNLOADS_FILE);
         const emails = await readData(EMAILS_FILE);
