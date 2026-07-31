@@ -356,6 +356,19 @@ app.get('/api/health', (req, res) => {
     res.json({ success: true, status: 'ok' });
 });
 
+// Diagnostic: reports whether email is configured and where it is sent to.
+// Does NOT expose the SMTP password. Used to verify Render env vars.
+app.get('/api/admin/email-config', requireAuth, (req, res) => {
+    res.json({
+        success: true,
+        configured: emailConfigured,
+        smtpHost: EMAIL_CONFIG.host,
+        smtpPort: EMAIL_CONFIG.port,
+        sender: EMAIL_CONFIG.auth.user,
+        recipient: YOUR_EMAIL
+    });
+});
+
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
